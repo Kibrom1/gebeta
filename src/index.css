@@ -95,10 +95,76 @@ body::before {
   color: #047857 !important;
 }
 
+/* Accessibility: Increase contrast for text on colored backgrounds */
+.bg-blue-100, .bg-blue-200, .bg-red-100, .bg-red-200, .bg-yellow-100, .bg-amber-200 {
+  color: #1e293b !important; /* dark gray for better contrast */
+}
+
+/* Accessibility: Increase font weight for key labels */
+.font-bold, .text-lg, .text-base {
+  font-weight: 700 !important;
+}
+
+/* Touch spacing: Increase padding and min-width for interactive elements */
+button, .cursor-pointer {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+/* Touch spacing: Increase gap between board houses on mobile */
+@media (max-width: 640px) {
+  .gap-2 {
+    gap: 0.75rem !important;
+  }
+  .gap-4 {
+    gap: 1.25rem !important;
+  }
+}
+
+/* Advanced polish: Add subtle hover/tap effect for houses and buttons */
+.cursor-pointer:hover, button:hover {
+  box-shadow: 0 0 0 4px #fbbf24aa;
+  filter: brightness(1.08);
+}
+.cursor-pointer:active, button:active {
+  box-shadow: 0 0 0 4px #2563eb55;
+  filter: brightness(0.96);
+}
+
+/* Advanced polish: Add transition for smoother feedback */
+.cursor-pointer, button {
+  transition: box-shadow 0.2s, filter 0.2s, background 0.2s;
+}
+
 @keyframes flash {
   0%, 100% { opacity: 1; filter: brightness(1.2); }
   50% { opacity: 0.5; filter: brightness(2); }
 }
 .animate-flash {
   animation: flash 0.8s linear infinite;
+}
+
+/* Board background for improved visual appeal */
+.bg-amber-300 {
+  background: radial-gradient(circle at 60% 40%, #ffe29a 0%, #fbbf24 60%, #f59e42 100%) !important;
+  box-shadow: 0 4px 32px #fbbf2422;
+}
+
+/* Pit label styles */
+.text-blue-700, .text-red-700 {
+  font-weight: 700;
+  text-shadow: 0 1px 2px #fff6;
+}
+
+/* Turn indicator styles */
+.bg-blue-100, .bg-red-100 {
+  font-weight: 700;
+  box-shadow: 0 2px 8px #0002;
+}
+
+/* Endgame modal styles */
+.fixed.inset-0 {
+  z-index: 50;
 }

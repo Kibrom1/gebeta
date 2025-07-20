@@ -708,17 +708,17 @@ const GebetaGame = () => {
           </div>
         </div>
         {/* Game Board - Modernized & Mobile Friendly */}
-        <div className="bg-amber-200 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-2 sm:gap-0 w-full">
+        <div className="bg-amber-300 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto w-full flex flex-col items-center" style={{ background: 'repeating-linear-gradient(135deg, #fbbf24 0px, #fbbf24 2px, #fff3c4 2px, #fff3c4 32px)' }}>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-4 sm:gap-0 w-full">
             {/* Player 2 Store */}
-            <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mb-2 sm:mb-0 shrink-0">
-              <div className={`font-bold text-xs sm:text-sm mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || 'Computer'}</div>
+            <div className="w-20 sm:w-24 h-20 sm:h-32 bg-red-200 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-red-400 mb-2 sm:mb-0 shrink-0 text-base sm:text-lg">
+              <div className={`font-bold mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || 'Computer'}</div>
               {renderSeeds(board.player2Store, getStorePosition(2))}
             </div>
             {/* Playing Field */}
-            <div className="flex-1 mx-2 sm:mx-6 min-w-[320px] max-w-full">
+            <div className="flex-1 mx-2 sm:mx-6 min-w-[320px] max-w-full flex flex-col gap-4">
               {/* Player 2 Houses (top row) */}
-              <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-4 justify-center flex-wrap w-full">
+              <div className="flex gap-2 sm:gap-4 mb-2 sm:mb-4 justify-center flex-wrap w-full">
                 {board.player2Houses.slice().reverse().map((seeds, idx) => {
                   const actualIndex = 5 - idx;
                   const houseId = getHousePosition(2, actualIndex);
@@ -729,14 +729,17 @@ const GebetaGame = () => {
                     <Tooltip key={`p2-${actualIndex}`} text={`House ${actualIndex + 1}`}>
                       <div
                         id={houseId}
-                        className={`w-12 sm:w-16 h-12 sm:h-16 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
-                          ${isSelectedP2 ? 'border-red-500 bg-red-200' :
+                        className={`w-16 sm:w-20 h-16 sm:h-20 rounded-xl shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
+                          ${isSelectedP2 ? 'border-red-500 bg-red-200 animate-flash' :
                             canSelectP2 ? 'border-red-400 bg-red-100 hover:bg-red-200' :
                             'border-red-300 bg-red-50'}
-                        ${isComputerFlash ? 'animate-flash' : ''}
+                          ${isComputerFlash ? 'animate-flash' : ''}
                         `}
                         onClick={() => currentPlayer === 2 && makeMove(actualIndex)}
+                        style={{ margin: '4px' }}
+                        aria-label={`Player 2 House ${actualIndex + 1}`}
                       >
+                        <span className="absolute top-1 left-1 text-xs font-bold text-red-700 bg-white bg-opacity-70 rounded px-1">{actualIndex + 1}</span>
                         {renderSeeds(seeds, houseId)}
                       </div>
                     </Tooltip>
@@ -744,7 +747,7 @@ const GebetaGame = () => {
                 })}
               </div>
               {/* Player 1 Houses (bottom row) */}
-              <div className="flex gap-1 sm:gap-2 justify-center flex-wrap w-full">
+              <div className="flex gap-2 sm:gap-4 justify-center flex-wrap w-full">
                 {board.player1Houses.map((seeds, idx) => {
                   const houseId = getHousePosition(1, idx);
                   const isSelectedP1 = selectedHouse && selectedHouse.player === 1 && selectedHouse.house === idx;
@@ -753,13 +756,16 @@ const GebetaGame = () => {
                     <Tooltip key={`p1-${idx}`} text={`House ${idx + 1}`}>
                       <div
                         id={houseId}
-                        className={`w-12 sm:w-16 h-12 sm:h-16 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
-                          ${isSelectedP1 ? 'border-blue-500 bg-blue-200' :
+                        className={`w-16 sm:w-20 h-16 sm:h-20 rounded-xl shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
+                          ${isSelectedP1 ? 'border-blue-500 bg-blue-200 animate-flash' :
                             canSelectP1 ? 'border-blue-400 bg-blue-100 hover:bg-blue-200' :
                             'border-blue-300 bg-blue-50'}
                         `}
                         onClick={() => currentPlayer === 1 && makeMove(idx)}
+                        style={{ margin: '4px' }}
+                        aria-label={`Player 1 House ${idx + 1}`}
                       >
+                        <span className="absolute top-1 left-1 text-xs font-bold text-blue-700 bg-white bg-opacity-70 rounded px-1">{idx + 1}</span>
                         {renderSeeds(seeds, houseId)}
                       </div>
                     </Tooltip>
@@ -768,42 +774,42 @@ const GebetaGame = () => {
               </div>
             </div>
             {/* Player 1 Store */}
-            <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mt-2 sm:mt-0 shrink-0">
-              <div className={`font-bold text-xs sm:text-sm mb-1 text-white ${currentPlayer === 1 ? 'animate-flash' : ''}`}>{playerNames[1] || 'Player 1'}</div>
+            <div className="w-20 sm:w-24 h-20 sm:h-32 bg-blue-200 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-blue-400 mt-2 sm:mt-0 shrink-0 text-base sm:text-lg">
+              <div className={`font-bold mb-1 text-white ${currentPlayer === 1 ? 'animate-flash' : ''}`}>{playerNames[1] || 'Player 1'}</div>
               {renderSeeds(board.player1Store, getStorePosition(1))}
             </div>
           </div>
-          {/* Player Labels - responsive font and layout */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-bold text-gray-700 mt-2 sm:mt-4 gap-2 sm:gap-0 w-full">
-            <div className={`flex items-center gap-1 sm:gap-2 justify-center sm:justify-start ${currentPlayer === 2 ? 'text-red-600 animate-flash' : ''}`}> 
-              <PlayerAvatar player={2} name={playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')} />
-              ← {playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')} (Red)
-            </div>
-            <div className="text-center text-gray-500">
-              {isAnimating ? 'Making move...' : gameStatus === 'ended' ? 'Game Over' : `${playerNames[currentPlayer] || `Player ${currentPlayer}`}'s turn`}
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-2 justify-center sm:justify-end ${currentPlayer === 1 ? 'text-blue-600 animate-flash' : ''}`}> 
-              {playerNames[1] || 'Player 1'} (Blue) →
-              <PlayerAvatar player={1} name={playerNames[1]} />
-            </div>
+          {/* Turn Indicator - persistent and clear */}
+          <div className="w-full text-center mt-2 mb-2">
+            <span className={`inline-block px-4 py-2 rounded-lg font-bold text-lg shadow-lg ${currentPlayer === 1 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'} animate-flash`}>
+              {currentPlayer === 1 ? `${playerNames[1] || 'Player 1'}'s Turn` : `${playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')}'s Turn`}
+            </span>
           </div>
         </div>
-        {/* Game Log - Bigger and More Visible, responsive */}
-        <div className="my-4 sm:my-6 w-full max-w-2xl mx-auto">
-          <div className="bg-yellow-50 border-4 border-amber-400 rounded-xl shadow-lg p-2 sm:p-4">
-            <h2 className="text-base sm:text-xl font-bold text-amber-900 mb-1 sm:mb-2 text-center">Game Log</h2>
-            <GameLog gameLog={gameLog} />
-          </div>
-        </div>
-        {/* Game End */}
+        {/* Game End - persistent message with Play Again/Exit */}
         {gameStatus === 'ended' && (
-          <div className="w-full max-w-md mx-auto">
-            <GameEndPanel
-              winner={winner}
-              playerNames={playerNames}
-              board={board}
-              resetGame={resetGame}
-            />
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="p-8 bg-white rounded-2xl shadow-2xl border-4 border-yellow-400 text-center max-w-md mx-auto">
+              <Trophy className="mx-auto mb-2 text-yellow-600" size={40} />
+              <h3 className="text-3xl font-bold text-gray-800 mb-2">
+                {winner === 0 ? 'Game Tied!' : `${playerNames[winner] || (winner === 2 ? 'Computer' : `Player ${winner}`)} Wins!`}
+              </h3>
+              <p className="text-gray-700 mb-4 text-lg">
+                Final Score: {playerNames[1] || 'Player 1'}: {board.player1Store} | {playerNames[2] || 'Player 2'}: {board.player2Store}
+              </p>
+              <button
+                onClick={resetGame}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-bold shadow text-lg"
+              >
+                Play Again
+              </button>
+              <button
+                onClick={startNewGame}
+                className="ml-4 bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors font-bold shadow text-lg"
+              >
+                Exit
+              </button>
+            </div>
           </div>
         )}
         {/* Game Results History - Modernized, responsive */}
