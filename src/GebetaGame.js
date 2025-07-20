@@ -779,7 +779,6 @@ const GebetaGame = () => {
                         style={{ margin: '4px' }}
                         aria-label={`Player 2 House ${actualIndex + 1}`}
                       >
-                        <span className="absolute top-1 left-1 text-xs font-bold text-red-700 bg-white bg-opacity-70 rounded px-1">{actualIndex + 1}</span>
                         {renderSeeds(seeds, houseId)}
                       </div>
                     </Tooltip>
@@ -807,7 +806,6 @@ const GebetaGame = () => {
                         style={{ margin: '4px' }}
                         aria-label={`Player 1 House ${idx + 1}`}
                       >
-                        <span className="absolute top-1 left-1 text-xs font-bold text-blue-700 bg-white bg-opacity-70 rounded px-1">{idx + 1}</span>
                         {renderSeeds(seeds, houseId)}
                       </div>
                     </Tooltip>
