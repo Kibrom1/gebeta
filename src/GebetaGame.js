@@ -10,7 +10,7 @@ import PlayerNameInput from './components/PlayerNameInput';
 import GameEndPanel from './components/GameEndPanel';
 import CulturalNote from './components/CulturalNote';
 
-const WS_SERVER_URL = 'ws://localhost:8080';
+const WS_SERVER_URL = 'https://gebeta-ws-server.fly.dev/'; // Use your actual public WebSocket server URL here
 
 const GebetaGame = () => {
   // Game state - 12 houses (6 per player) + 2 stores
@@ -558,105 +558,109 @@ const GebetaGame = () => {
   return (
     <div className="w-full max-w-5xl mx-auto p-2 sm:p-4 bg-gradient-to-b from-amber-50 to-orange-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-2xl p-2 sm:p-8 border border-amber-100">
-        {/* App Title - Always at Top */}
-        {/* Removed Gebeta-ገበጣ title as requested */}
-        {/* Online Play UI - Modernized + Controls */}
-        <div className="mb-2 sm:mb-4 flex flex-col md:flex-row items-center gap-1 sm:gap-2 justify-between">
-          {/* Play Online - Left Side */}
-          <div className="flex gap-1 sm:gap-2 items-center w-full md:w-auto flex-wrap md:justify-start justify-center">
-            <Tooltip text="Play with someone online in real time">
-              <button
-                className={`px-2 sm:px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 sm:gap-2 shadow transition-colors ${onlineMode ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100'}`}
-                onClick={() => setOnlineMode(!onlineMode)}
-              >
-                <Link2 size={18} />
-                {onlineMode ? 'Online Mode Enabled' : 'Play Online'}
-              </button>
-            </Tooltip>
-            {onlineMode && (
-              <span className="text-green-700 text-xs sm:text-sm font-semibold flex items-center gap-1">
-                <Loader2 className="animate-spin" size={16} />
-                {onlineStatus === 'idle' ? 'Ready' : onlineStatus === 'waiting' ? 'Waiting for opponent...' : 'Connected'}
-              </span>
-            )}
-          </div>
-          {/* Rules and New Game - Right Side */}
-          <div className="flex gap-1 sm:gap-2 items-center w-full md:w-auto flex-wrap md:justify-end justify-center">
-            <Tooltip text="View game rules">
-              <button
-                onClick={() => setShowRules(!showRules)}
-                className="bg-blue-500 text-white px-2 sm:px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1 sm:gap-2 shadow text-xs sm:text-base"
-              >
-                <Info size={16} />
-                Rules
-              </button>
-            </Tooltip>
-            <Tooltip text="Restart the game">
-              <button
-                onClick={resetGame}
-                className="bg-green-600 text-white px-2 sm:px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1 sm:gap-2 shadow text-xs sm:text-base"
-              >
-                <RotateCcw size={16} />
-                New Game
-              </button>
-            </Tooltip>
-          </div>
-          {/* Game ID and Status - Left aligned, only for online mode */}
-          {onlineMode && (
-            <div className="flex gap-1 sm:gap-2 items-center w-full md:w-auto flex-wrap">
-              {onlineStatus === 'idle' && (
-                <>
-                  <button
-                    className="bg-green-500 text-white px-2 sm:px-3 py-1.5 rounded-lg font-bold shadow hover:bg-green-600"
-                    onClick={handleCreateGame}
-                  >
-                    Create Game
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="Game ID"
-                    value={gameId}
-                    onChange={e => setGameId(e.target.value)}
-                    className="px-2 py-1.5 rounded border border-blue-300 focus:outline-none shadow w-20 sm:w-auto"
-                  />
-                  <button
-                    className="bg-blue-500 text-white px-2 sm:px-3 py-1.5 rounded-lg font-bold shadow hover:bg-blue-600"
-                    onClick={() => handleJoinGame(gameId)}
-                  >
-                    Join Game
-                  </button>
-                  {onlineError && <div className="text-red-600 mt-1">{onlineError}</div>}
-                </>
-              )}
-              {onlineStatus === 'waiting' && (
-                <div className="text-green-700 font-mono text-xs sm:text-sm">
-                  Game ID: <span className="font-bold">{gameId}</span>
-                </div>
-              )}
-              {onlineStatus === 'playing' && (
-                <div className="text-green-700 font-mono text-xs sm:text-sm">
-                  Connected {isHost ? '(Host)' : '(Guest)'} | Game ID: <span className="font-bold">{gameId}</span>
-                </div>
+        {/* Responsive controls and top bar */}
+        <div className="mb-2 sm:mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 w-full items-start">
+          {/* Left: Online Play & Status */}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
+              <Tooltip text="Play with someone online in real time">
+                <button
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 sm:gap-2 shadow transition-colors ${onlineMode ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100'}`}
+                  onClick={() => setOnlineMode(!onlineMode)}
+                >
+                  <Link2 size={18} />
+                  {onlineMode ? 'Online Mode Enabled' : 'Play Online'}
+                </button>
+              </Tooltip>
+              {onlineMode && (
+                <span className="text-green-700 text-xs sm:text-sm font-semibold flex items-center gap-1">
+                  <Loader2 className="animate-spin" size={16} />
+                  {onlineStatus === 'idle' ? 'Ready' : onlineStatus === 'waiting' ? 'Waiting for opponent...' : 'Connected'}
+                </span>
               )}
             </div>
-          )}
+            {/* Game ID and Status - only for online mode */}
+            {onlineMode && (
+              <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start mt-2">
+                {onlineStatus === 'idle' && (
+                  <>
+                    <button
+                      className="bg-green-500 text-white px-2 sm:px-3 py-1.5 rounded-lg font-bold shadow hover:bg-green-600"
+                      onClick={handleCreateGame}
+                    >
+                      Create Game
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="Game ID"
+                      value={gameId}
+                      onChange={e => setGameId(e.target.value)}
+                      className="px-2 py-1.5 rounded border border-blue-300 focus:outline-none shadow w-24 sm:w-auto"
+                    />
+                    <button
+                      className="bg-blue-500 text-white px-2 sm:px-3 py-1.5 rounded-lg font-bold shadow hover:bg-blue-600"
+                      onClick={() => handleJoinGame(gameId)}
+                    >
+                      Join Game
+                    </button>
+                    {onlineError && <div className="text-red-600 mt-1">{onlineError}</div>}
+                  </>
+                )}
+                {onlineStatus === 'waiting' && (
+                  <div className="text-green-700 font-mono text-xs sm:text-sm">
+                    Game ID: <span className="font-bold">{gameId}</span>
+                  </div>
+                )}
+                {onlineStatus === 'playing' && (
+                  <div className="text-green-700 font-mono text-xs sm:text-sm">
+                    Connected {isHost ? '(Host)' : '(Guest)'} | Game ID: <span className="font-bold">{gameId}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Right: Rules & New Game Controls */}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-end">
+              <Tooltip text="View game rules">
+                <button
+                  onClick={() => setShowRules(!showRules)}
+                  className="bg-blue-500 text-white px-2 sm:px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1 sm:gap-2 shadow text-xs sm:text-base"
+                >
+                  <Info size={16} />
+                  Rules
+                </button>
+              </Tooltip>
+              <Tooltip text="Restart the game">
+                <button
+                  onClick={resetGame}
+                  className="bg-green-600 text-white px-2 sm:px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1 sm:gap-2 shadow text-xs sm:text-base"
+                >
+                  <RotateCcw size={16} />
+                  New Game
+                </button>
+              </Tooltip>
+            </div>
+          </div>
         </div>
         {/* Player Name Input */}
         {nameInputVisible && (
-          <PlayerNameInput
-            playerNames={playerNames}
-            handleNameChange={handleNameChange}
-            handleStartGame={handleStartGame}
-          />
+          <div className="w-full max-w-md mx-auto">
+            <PlayerNameInput
+              playerNames={playerNames}
+              handleNameChange={handleNameChange}
+              handleStartGame={handleStartGame}
+            />
+          </div>
         )}
         {/* Highest Scorer Display */}
-        <HighestScorer highestScorer={highestScorer} />
-        {/* Header (controls only, no title) */}
-        {/* Removed duplicate controls section */}
+        <div className="w-full max-w-md mx-auto mb-2 sm:mb-4">
+          <HighestScorer highestScorer={highestScorer} />
+        </div>
         {/* Rules Panel */}
-        {showRules && <RulesPanel />}
+        {showRules && <div className="w-full max-w-lg mx-auto"><RulesPanel /></div>}
         {/* Game Status */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 text-xs sm:text-sm">
           <div className="bg-gray-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
             <div className="text-xs sm:text-sm text-gray-600">Current Player</div>
             <div className={`font-bold text-base sm:text-lg flex items-center gap-2 ${currentPlayer === 1 ? 'text-blue-600' : 'text-red-600'}`}> 
@@ -688,17 +692,17 @@ const GebetaGame = () => {
           </div>
         </div>
         {/* Game Board - Modernized & Mobile Friendly */}
-        <div className="bg-amber-200 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-2 sm:gap-0">
+        <div className="bg-amber-200 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-2 sm:gap-0 w-full">
             {/* Player 2 Store */}
-            <div className="w-16 sm:w-20 h-20 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mb-2 sm:mb-0">
+            <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mb-2 sm:mb-0 shrink-0">
               <div className="text-white font-bold text-xs sm:text-sm mb-1">P2</div>
               {renderSeeds(board.player2Store, getStorePosition(2))}
             </div>
             {/* Playing Field */}
-            <div className="flex-1 mx-2 sm:mx-6">
+            <div className="flex-1 mx-2 sm:mx-6 min-w-[320px] max-w-full">
               {/* Player 2 Houses (top row) */}
-              <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-4 justify-center flex-wrap">
+              <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-4 justify-center flex-wrap w-full">
                 {board.player2Houses.slice().reverse().map((seeds, idx) => {
                   const actualIndex = 5 - idx;
                   const houseId = getHousePosition(2, actualIndex);
@@ -722,7 +726,7 @@ const GebetaGame = () => {
                 })}
               </div>
               {/* Player 1 Houses (bottom row) */}
-              <div className="flex gap-1 sm:gap-2 justify-center flex-wrap">
+              <div className="flex gap-1 sm:gap-2 justify-center flex-wrap w-full">
                 {board.player1Houses.map((seeds, idx) => {
                   const houseId = getHousePosition(1, idx);
                   const isSelected = selectedHouse && selectedHouse.player === 1 && selectedHouse.house === idx;
@@ -746,13 +750,13 @@ const GebetaGame = () => {
               </div>
             </div>
             {/* Player 1 Store */}
-            <div className="w-16 sm:w-20 h-20 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mt-2 sm:mt-0">
+            <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mt-2 sm:mt-0 shrink-0">
               <div className="text-white font-bold text-xs sm:text-sm mb-1">P1</div>
               {renderSeeds(board.player1Store, getStorePosition(1))}
             </div>
           </div>
-          {/* Player Labels */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-bold text-gray-700 mt-2 sm:mt-4 gap-2 sm:gap-0">
+          {/* Player Labels - responsive font and layout */}
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-bold text-gray-700 mt-2 sm:mt-4 gap-2 sm:gap-0 w-full">
             <div className={`${currentPlayer === 2 ? 'text-red-600' : ''} flex items-center gap-1 sm:gap-2 justify-center sm:justify-start`}>
               <PlayerAvatar player={2} name={playerNames[2]} />
               ← {playerNames[2] || 'Player 2'} (Red)
@@ -766,37 +770,42 @@ const GebetaGame = () => {
             </div>
           </div>
         </div>
-        {/* Game Log - Bigger and More Visible */}
-        <div className="my-4 sm:my-6">
-          <div className="bg-yellow-50 border-4 border-amber-400 rounded-xl shadow-lg p-3 sm:p-4 max-w-2xl mx-auto">
+        {/* Game Log - Bigger and More Visible, responsive */}
+        <div className="my-4 sm:my-6 w-full max-w-2xl mx-auto">
+          <div className="bg-yellow-50 border-4 border-amber-400 rounded-xl shadow-lg p-2 sm:p-4">
             <h2 className="text-base sm:text-xl font-bold text-amber-900 mb-1 sm:mb-2 text-center">Game Log</h2>
             <GameLog gameLog={gameLog} />
           </div>
         </div>
         {/* Game End */}
         {gameStatus === 'ended' && (
-          <GameEndPanel
-            winner={winner}
-            playerNames={playerNames}
-            board={board}
-            resetGame={resetGame}
-          />
+          <div className="w-full max-w-md mx-auto">
+            <GameEndPanel
+              winner={winner}
+              playerNames={playerNames}
+              board={board}
+              resetGame={resetGame}
+            />
+          </div>
         )}
-        {/* Game Results History - Modernized */}
-        <GameResultsTable gameResults={gameResults} />
+        {/* Game Results History - Modernized, responsive */}
+        <div className="w-full max-w-2xl mx-auto">
+          <GameResultsTable gameResults={gameResults} />
+        </div>
         {/* New Game Button always asks for names */}
-        <div className="mt-2 flex justify-center">
+        <div className="mt-2 flex justify-center w-full">
           <Tooltip text="Start a new game with new names">
             <button
               onClick={startNewGame}
-              className="bg-blue-500 text-white px-3 sm:px-4 py-1.5 rounded-lg hover:bg-blue-700 font-bold shadow text-xs sm:text-base"
+              className="bg-blue-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow text-xs sm:text-base min-w-[100px]"
+              style={{ fontSize: '1rem', minHeight: '40px' }}
             >
               New Game
             </button>
           </Tooltip>
         </div>
-        {/* Cultural Note - moved to bottom */}
-        <div className="mt-6">
+        {/* Cultural Note - moved to bottom, responsive */}
+        <div className="mt-6 w-full max-w-lg mx-auto">
           <CulturalNote />
         </div>
       </div>
