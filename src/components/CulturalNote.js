@@ -5,7 +5,7 @@ const CulturalNote = () => (
     <h4 className="font-bold mb-2">About Gebeta:</h4>
     <p className="text-sm text-gray-700">
       Gebeta is one of the world's oldest board games, with archaeological evidence dating back to 6th-7th centuries AD in ancient Ethiopia. 
-      This traditional mancala game has been played for generations across Ethiopia and Eritrea, including in Tigray, 
+      This traditional mancala game has been played for generations across Ethiopia and Eritrea, mainly in Tigray, 
       and remains an important part of cultural heritage and social gatherings.
     </p>
   </div>

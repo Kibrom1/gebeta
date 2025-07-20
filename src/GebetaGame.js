@@ -44,6 +44,16 @@ const GebetaGame = () => {
   const [remotePlayerJoined, setRemotePlayerJoined] = useState(false);
   const [computerSelectedHouse, setComputerSelectedHouse] = useState(null);
 
+  const clickSoundRef = useRef(null);
+  const finishSoundRef = useRef(null);
+  const clapSoundRef = useRef(null);
+
+  useEffect(() => {
+    clickSoundRef.current = new window.Audio(process.env.PUBLIC_URL + '/sounds/click.mp3');
+    finishSoundRef.current = new window.Audio(process.env.PUBLIC_URL + '/sounds/finish.mp3');
+    clapSoundRef.current = new window.Audio(process.env.PUBLIC_URL + '/sounds/clap.mp3');
+  }, []);
+
   const addToLog = (message) => {
     setGameLog(prev => [...prev.slice(-4), message]);
   };
@@ -575,6 +585,34 @@ const GebetaGame = () => {
     }
   }, [currentPlayer, board, onlineMode, nameInputVisible, playerNames, gameStatus]);
 
+  const playSound = (audioRef) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
+  // Play sound on pit click
+  const handlePitClick = (houseIndex, player) => {
+    if ((player === 1 && currentPlayer === 1) || (player === 2 && currentPlayer === 2)) {
+      playSound(clickSoundRef);
+      makeMove(houseIndex);
+    }
+  };
+
+  // Play sound on game end
+  useEffect(() => {
+    if (gameStatus === 'ended') {
+      playSound(finishSoundRef);
+      if (winner && winner !== 0) {
+        setTimeout(() => {
+          playSound(clapSoundRef);
+        }, 800);
+      }
+    }
+  }, [gameStatus, winner]);
+
   return (
     <div className="w-full max-w-5xl mx-auto p-2 sm:p-4 bg-gradient-to-b from-amber-50 to-orange-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-2xl p-2 sm:p-8 border border-amber-100">
@@ -729,13 +767,15 @@ const GebetaGame = () => {
                     <Tooltip key={`p2-${actualIndex}`} text={`House ${actualIndex + 1}`}>
                       <div
                         id={houseId}
+                        disabled={currentPlayer !== 2}
                         className={`w-16 sm:w-20 h-16 sm:h-20 rounded-xl shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
                           ${isSelectedP2 ? 'border-red-500 bg-red-200 animate-flash' :
                             canSelectP2 ? 'border-red-400 bg-red-100 hover:bg-red-200' :
                             'border-red-300 bg-red-50'}
                           ${isComputerFlash ? 'animate-flash' : ''}
+                          ${currentPlayer !== 2 ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
-                        onClick={() => currentPlayer === 2 && makeMove(actualIndex)}
+                        onClick={() => handlePitClick(actualIndex, 2)}
                         style={{ margin: '4px' }}
                         aria-label={`Player 2 House ${actualIndex + 1}`}
                       >
@@ -756,12 +796,14 @@ const GebetaGame = () => {
                     <Tooltip key={`p1-${idx}`} text={`House ${idx + 1}`}>
                       <div
                         id={houseId}
+                        disabled={currentPlayer !== 1}
                         className={`w-16 sm:w-20 h-16 sm:h-20 rounded-xl shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
                           ${isSelectedP1 ? 'border-blue-500 bg-blue-200 animate-flash' :
                             canSelectP1 ? 'border-blue-400 bg-blue-100 hover:bg-blue-200' :
                             'border-blue-300 bg-blue-50'}
+                          ${currentPlayer !== 1 ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
-                        onClick={() => currentPlayer === 1 && makeMove(idx)}
+                        onClick={() => handlePitClick(idx, 1)}
                         style={{ margin: '4px' }}
                         aria-label={`Player 1 House ${idx + 1}`}
                       >
