@@ -1,6 +1,6 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Amharic word above logo -->
-  <text x="32" y="18" text-anchor="middle" font-family="Noto Sans Ethiopic, Verdana, Arial" font-size="18" fill="#B45309" font-weight="bold">ገበጣ</text>
+  <!-- Move Amharic word above all shapes, increase y for visibility -->
+  <text x="32" y="10" text-anchor="middle" font-family="Noto Sans Ethiopic, Verdana, Arial" font-size="22" fill="#8B2C02" font-weight="bold" stroke="#FFF3C4" stroke-width="1.5">ገበጣ</text>
   <rect width="64" height="64" rx="16" fill="#FBBF24"/>
   <ellipse cx="32" cy="32" rx="24" ry="12" fill="#FFF3C4" stroke="#B45309" stroke-width="2"/>
   <ellipse cx="32" cy="32" rx="20" ry="8" fill="#F59E42" stroke="#B45309" stroke-width="1.5"/>
@@ -9,5 +9,6 @@
   <circle cx="32" cy="32" r="3" fill="#B45309"/>
   <circle cx="40" cy="32" r="3" fill="#B45309"/>
   <circle cx="48" cy="32" r="3" fill="#B45309"/>
-  <text x="32" y="54" text-anchor="middle" font-family="Verdana" font-size="14" fill="#B45309" font-weight="bold">Gebeta</text>
+  <!-- English word below logo, larger and more visible -->
+  <text x="32" y="60" text-anchor="middle" font-family="Verdana" font-size="18" fill="#8B2C02" font-weight="bold" stroke="#FFF3C4" stroke-width="1.5">Gebeta</text>
 </svg>
