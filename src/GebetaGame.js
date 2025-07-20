@@ -1,0 +1,802 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, RotateCcw, Trophy, Info, Users, Link2, Loader2 } from 'lucide-react';
+import PlayerAvatar from './components/PlayerAvatar';
+import Tooltip from './components/Tooltip';
+import GameLog from './components/GameLog';
+import GameResultsTable from './components/GameResultsTable';
+import HighestScorer from './components/HighestScorer';
+import RulesPanel from './components/RulesPanel';
+import PlayerNameInput from './components/PlayerNameInput';
+import GameEndPanel from './components/GameEndPanel';
+import CulturalNote from './components/CulturalNote';
+
+const WS_SERVER_URL = 'ws://localhost:8080';
+
+const GebetaGame = () => {
+  // Game state - 12 houses (6 per player) + 2 stores
+  const [board, setBoard] = useState({
+    player1Houses: [4, 4, 4, 4, 4, 4], // Bottom row (left to right)
+    player2Houses: [4, 4, 4, 4, 4, 4], // Top row (right to left)
+    player1Store: 0, // Right side
+    player2Store: 0  // Left side
+  });
+  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [gameStatus, setGameStatus] = useState('playing'); // playing, ended
+  const [winner, setWinner] = useState(null);
+  const [selectedHouse, setSelectedHouse] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [gameLog, setGameLog] = useState(['Game started! Player 1 begins.']);
+  const [showRules, setShowRules] = useState(false);
+  const [movingSeed, setMovingSeed] = useState(null); // For animation
+  const [moveAnimationStep, setMoveAnimationStep] = useState(0);
+  const [movePath, setMovePath] = useState([]);
+  const [playerNames, setPlayerNames] = useState({ 1: '', 2: '' });
+  const [nameInputVisible, setNameInputVisible] = useState(true);
+  const [gameResults, setGameResults] = useState([]); // In-memory list
+  const [highestScorer, setHighestScorer] = useState(null);
+  const [onlineMode, setOnlineMode] = useState(false); // Placeholder for online play
+  const [ws, setWs] = useState(null);
+  const [gameId, setGameId] = useState('');
+  const [isHost, setIsHost] = useState(false);
+  const [onlineError, setOnlineError] = useState('');
+  const [onlineStatus, setOnlineStatus] = useState('idle'); // idle, waiting, playing
+  const wsRef = useRef(null);
+  const [remotePlayerJoined, setRemotePlayerJoined] = useState(false);
+
+  const addToLog = (message) => {
+    setGameLog(prev => [...prev.slice(-4), message]);
+  };
+
+  const getTotalSeeds = (player) => {
+    if (player === 1) {
+      return board.player1Houses.reduce((a, b) => a + b, 0) + board.player1Store;
+    } else {
+      return board.player2Houses.reduce((a, b) => a + b, 0) + board.player2Store;
+    }
+  };
+
+  const checkGameEnd = (newBoard) => {
+    const player1Total = newBoard.player1Houses.reduce((a, b) => a + b, 0);
+    const player2Total = newBoard.player2Houses.reduce((a, b) => a + b, 0);
+    if (player1Total === 0 || player2Total === 0) {
+      const finalBoard = {
+        ...newBoard,
+        player1Store: newBoard.player1Store + (player1Total > 0 ? player1Total : 0),
+        player2Store: newBoard.player2Store + (player2Total > 0 ? player2Total : 0),
+        player1Houses: [0, 0, 0, 0, 0, 0],
+        player2Houses: [0, 0, 0, 0, 0, 0]
+      };
+      setBoard(finalBoard);
+      if (finalBoard.player1Store > finalBoard.player2Store) {
+        setWinner(1);
+        addToLog('🏆 Player 1 wins the game!');
+      } else if (finalBoard.player2Store > finalBoard.player1Store) {
+        setWinner(2);
+        addToLog('🏆 Player 2 wins the game!');
+      } else {
+        setWinner(0);
+        addToLog('🤝 Game ends in a tie!');
+      }
+      setGameStatus('ended');
+
+      let result = {
+        date: new Date().toLocaleString(),
+        player1: playerNames[1] || 'Player 1',
+        player2: playerNames[2] || 'Player 2',
+        score1: finalBoard.player1Store,
+        score2: finalBoard.player2Store,
+        winner: finalBoard.player1Store > finalBoard.player2Store ? playerNames[1] || 'Player 1' : finalBoard.player2Store > finalBoard.player1Store ? playerNames[2] || 'Player 2' : 'Tie',
+      };
+      saveGameResult(result);
+
+      return true;
+    }
+    return false;
+  };
+
+  const canPlayerMove = (player, boardState = board) => {
+    if (player === 1) {
+      return boardState.player1Houses.some(house => house > 0);
+    } else {
+      return boardState.player2Houses.some(house => house > 0);
+    }
+  };
+
+  // Helper to get house position for animation
+  const getHousePosition = (player, index) => {
+    // Returns a unique string for each house/store for animation targeting
+    return `${player === 1 ? 'p1' : 'p2'}-house-${index}`;
+  };
+  const getStorePosition = (player) => {
+    return `${player === 1 ? 'p1' : 'p2'}-store`;
+  };
+
+  // Connect to WebSocket server
+  const connectWebSocket = () => {
+    if (wsRef.current) return;
+    const socket = new window.WebSocket(WS_SERVER_URL);
+    wsRef.current = socket;
+    setWs(socket);
+    socket.onopen = () => {
+      setOnlineStatus('waiting');
+    };
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'created') {
+        setGameId(data.gameId);
+        setIsHost(true);
+        setOnlineStatus('waiting');
+        addToLog('Game created. Waiting for opponent to join...');
+      } else if (data.type === 'start') {
+        setOnlineStatus('playing');
+        setRemotePlayerJoined(true);
+        setBoard(data.state);
+        addToLog('Opponent joined. Game started!');
+      } else if (data.type === 'update') {
+        setBoard(data.state);
+        addToLog('Opponent made a move.');
+      } else if (data.type === 'error') {
+        setOnlineError(data.message);
+        addToLog('Error: ' + data.message);
+      } else if (data.type === 'joined') {
+        setOnlineStatus('playing');
+        setRemotePlayerJoined(true);
+        addToLog('Joined game. Waiting for host to start.');
+      }
+    };
+    socket.onclose = () => {
+      setWs(null);
+      wsRef.current = null;
+      setOnlineStatus('idle');
+      setRemotePlayerJoined(false);
+      addToLog('Disconnected from server.');
+    };
+  };
+
+  // Create or join game
+  const handleCreateGame = () => {
+    connectWebSocket();
+    setTimeout(() => {
+      wsRef.current && wsRef.current.send(JSON.stringify({ type: 'create', state: board }));
+    }, 500);
+  };
+  const handleJoinGame = (id) => {
+    connectWebSocket();
+    setTimeout(() => {
+      wsRef.current && wsRef.current.send(JSON.stringify({ type: 'join', gameId: id }));
+    }, 500);
+  };
+
+  // Send move to server
+  const sendMove = (newBoard) => {
+    if (wsRef.current && gameId) {
+      wsRef.current.send(JSON.stringify({ type: 'move', gameId, state: newBoard }));
+    }
+  };
+
+  const makeMove = (houseIndex) => {
+    if (isAnimating || gameStatus === 'ended' || selectedHouse !== null) return;
+    if (onlineMode && wsRef.current && onlineStatus === 'playing') {
+      // Only allow local player to move on their turn
+      if ((isHost && currentPlayer === 1) || (!isHost && currentPlayer === 2)) {
+        let seeds = 0;
+        let newBoard = { ...board };
+        if (currentPlayer === 1) {
+          if (newBoard.player1Houses[houseIndex] === 0) return;
+          seeds = newBoard.player1Houses[houseIndex];
+          newBoard.player1Houses[houseIndex] = 0;
+        } else {
+          if (newBoard.player2Houses[houseIndex] === 0) return;
+          seeds = newBoard.player2Houses[houseIndex];
+          newBoard.player2Houses[houseIndex] = 0;
+        }
+        setIsAnimating(true);
+        setSelectedHouse({ player: currentPlayer, house: houseIndex });
+
+        // Prepare animation path
+        let path = [];
+        let currentPos = houseIndex;
+        let currentSide = currentPlayer;
+        for (let i = 0; i < seeds; i++) {
+          if (currentSide === 1) {
+            currentPos++;
+            if (currentPos > 5) {
+              path.push(getStorePosition(1));
+              currentPos = 0;
+              currentSide = 2;
+            } else {
+              path.push(getHousePosition(1, currentPos));
+            }
+          } else {
+            currentPos++;
+            if (currentPos > 5) {
+              if (currentPlayer === 2) {
+                path.push(getStorePosition(2));
+              }
+              currentPos = 0;
+              currentSide = 1;
+            } else {
+              path.push(getHousePosition(2, currentPos));
+            }
+          }
+        }
+        setMovePath(path);
+        setMoveAnimationStep(0);
+        setMovingSeed({ player: currentPlayer, house: houseIndex });
+
+        // Animate seed movement
+        const animateSeed = (step) => {
+          setMoveAnimationStep(step);
+          if (step < path.length) {
+            // Increment the seed count in the target house/store immediately for animation
+            let target = path[step];
+            let tempBoard = { ...newBoard };
+            if (target.startsWith('p1-house-')) {
+              const idx = parseInt(target.split('-')[2]);
+              tempBoard.player1Houses[idx]++;
+            } else if (target.startsWith('p2-house-')) {
+              const idx = parseInt(target.split('-')[2]);
+              tempBoard.player2Houses[idx]++;
+            } else if (target === 'p1-store') {
+              tempBoard.player1Store++;
+            } else if (target === 'p2-store') {
+              tempBoard.player2Store++;
+            }
+            setBoard(tempBoard);
+            setTimeout(() => animateSeed(step + 1), 400); // 400ms per seed (slower)
+          } else {
+            // After animation, update board for captures and turn logic
+            let currentPos = houseIndex;
+            let currentSide = currentPlayer;
+            let anotherTurn = false;
+            for (let i = 0; i < seeds; i++) {
+              if (currentSide === 1) {
+                currentPos++;
+                if (currentPos > 5) {
+                  // Already incremented store above
+                  if (i === seeds - 1) {
+                    anotherTurn = true;
+                  }
+                  currentPos = 0;
+                  currentSide = 2;
+                } else {
+                  // Already incremented house above
+                  if (i === seeds - 1 && newBoard.player1Houses[currentPos] === 1 && currentPlayer === 1) {
+                    const oppositeHouse = 5 - currentPos;
+                    if (newBoard.player2Houses[oppositeHouse] > 0) {
+                      newBoard.player1Store += newBoard.player2Houses[oppositeHouse] + 1;
+                      newBoard.player1Houses[currentPos] = 0;
+                      newBoard.player2Houses[oppositeHouse] = 0;
+                      addToLog(`Player 1 captured ${newBoard.player2Houses[oppositeHouse] + 1} seeds!`);
+                    }
+                  }
+                }
+              } else {
+                currentPos++;
+                if (currentPos > 5) {
+                  // Already incremented store above
+                  if (currentPlayer === 2 && i === seeds - 1) {
+                    anotherTurn = true;
+                  }
+                  currentPos = 0;
+                  currentSide = 1;
+                } else {
+                  // Already incremented house above
+                  if (i === seeds - 1 && newBoard.player2Houses[currentPos] === 1 && currentPlayer === 2) {
+                    const oppositeHouse = 5 - currentPos;
+                    if (newBoard.player1Houses[oppositeHouse] > 0) {
+                      newBoard.player2Store += newBoard.player1Houses[oppositeHouse] + 1;
+                      newBoard.player2Houses[currentPos] = 0;
+                      newBoard.player1Houses[oppositeHouse] = 0;
+                      addToLog(`Player 2 captured ${newBoard.player1Houses[oppositeHouse] + 1} seeds!`);
+                    }
+                  }
+                }
+              }
+            }
+            setBoard(newBoard);
+            if (!checkGameEnd(newBoard)) {
+              if (!anotherTurn) {
+                const nextPlayer = currentPlayer === 1 ? 2 : 1;
+                if (canPlayerMove(nextPlayer, newBoard)) {
+                  setCurrentPlayer(nextPlayer);
+                  addToLog(`Player ${nextPlayer}'s turn`);
+                } else {
+                  addToLog(`Player ${nextPlayer} has no moves - Player ${currentPlayer} continues`);
+                }
+              } else {
+                addToLog(`Player ${currentPlayer} gets another turn!`);
+              }
+            }
+            setSelectedHouse(null);
+            setIsAnimating(false);
+            setMovingSeed(null);
+            setMovePath([]);
+            setMoveAnimationStep(0);
+            // Send move to server
+            sendMove(newBoard);
+          }
+        };
+        animateSeed(0);
+      }
+    } else if (!onlineMode) {
+      let seeds = 0;
+      let newBoard = { ...board };
+      if (currentPlayer === 1) {
+        if (newBoard.player1Houses[houseIndex] === 0) return;
+        seeds = newBoard.player1Houses[houseIndex];
+        newBoard.player1Houses[houseIndex] = 0;
+      } else {
+        if (newBoard.player2Houses[houseIndex] === 0) return;
+        seeds = newBoard.player2Houses[houseIndex];
+        newBoard.player2Houses[houseIndex] = 0;
+      }
+      setIsAnimating(true);
+      setSelectedHouse({ player: currentPlayer, house: houseIndex });
+
+      // Prepare animation path
+      let path = [];
+      let currentPos = houseIndex;
+      let currentSide = currentPlayer;
+      for (let i = 0; i < seeds; i++) {
+        if (currentSide === 1) {
+          currentPos++;
+          if (currentPos > 5) {
+            path.push(getStorePosition(1));
+            currentPos = 0;
+            currentSide = 2;
+          } else {
+            path.push(getHousePosition(1, currentPos));
+          }
+        } else {
+          currentPos++;
+          if (currentPos > 5) {
+            if (currentPlayer === 2) {
+              path.push(getStorePosition(2));
+            }
+            currentPos = 0;
+            currentSide = 1;
+          } else {
+            path.push(getHousePosition(2, currentPos));
+          }
+        }
+      }
+      setMovePath(path);
+      setMoveAnimationStep(0);
+      setMovingSeed({ player: currentPlayer, house: houseIndex });
+
+      // Animate seed movement
+      const animateSeed = (step) => {
+        setMoveAnimationStep(step);
+        if (step < path.length) {
+          // Increment the seed count in the target house/store immediately for animation
+          let target = path[step];
+          let tempBoard = { ...newBoard };
+          if (target.startsWith('p1-house-')) {
+            const idx = parseInt(target.split('-')[2]);
+            tempBoard.player1Houses[idx]++;
+          } else if (target.startsWith('p2-house-')) {
+            const idx = parseInt(target.split('-')[2]);
+            tempBoard.player2Houses[idx]++;
+          } else if (target === 'p1-store') {
+            tempBoard.player1Store++;
+          } else if (target === 'p2-store') {
+            tempBoard.player2Store++;
+          }
+          setBoard(tempBoard);
+          setTimeout(() => animateSeed(step + 1), 400); // 400ms per seed (slower)
+        } else {
+          // After animation, update board for captures and turn logic
+          let currentPos = houseIndex;
+          let currentSide = currentPlayer;
+          let anotherTurn = false;
+          for (let i = 0; i < seeds; i++) {
+            if (currentSide === 1) {
+              currentPos++;
+              if (currentPos > 5) {
+                // Already incremented store above
+                if (i === seeds - 1) {
+                  anotherTurn = true;
+                }
+                currentPos = 0;
+                currentSide = 2;
+              } else {
+                // Already incremented house above
+                if (i === seeds - 1 && newBoard.player1Houses[currentPos] === 1 && currentPlayer === 1) {
+                  const oppositeHouse = 5 - currentPos;
+                  if (newBoard.player2Houses[oppositeHouse] > 0) {
+                    newBoard.player1Store += newBoard.player2Houses[oppositeHouse] + 1;
+                    newBoard.player1Houses[currentPos] = 0;
+                    newBoard.player2Houses[oppositeHouse] = 0;
+                    addToLog(`Player 1 captured ${newBoard.player2Houses[oppositeHouse] + 1} seeds!`);
+                  }
+                }
+              }
+            } else {
+              currentPos++;
+              if (currentPos > 5) {
+                // Already incremented store above
+                if (currentPlayer === 2 && i === seeds - 1) {
+                  anotherTurn = true;
+                }
+                currentPos = 0;
+                currentSide = 1;
+              } else {
+                // Already incremented house above
+                if (i === seeds - 1 && newBoard.player2Houses[currentPos] === 1 && currentPlayer === 2) {
+                  const oppositeHouse = 5 - currentPos;
+                  if (newBoard.player1Houses[oppositeHouse] > 0) {
+                    newBoard.player2Store += newBoard.player1Houses[oppositeHouse] + 1;
+                    newBoard.player2Houses[currentPos] = 0;
+                    newBoard.player1Houses[oppositeHouse] = 0;
+                    addToLog(`Player 2 captured ${newBoard.player1Houses[oppositeHouse] + 1} seeds!`);
+                  }
+                }
+              }
+            }
+          }
+          setBoard(newBoard);
+          if (!checkGameEnd(newBoard)) {
+            if (!anotherTurn) {
+              const nextPlayer = currentPlayer === 1 ? 2 : 1;
+              if (canPlayerMove(nextPlayer, newBoard)) {
+                setCurrentPlayer(nextPlayer);
+                addToLog(`Player ${nextPlayer}'s turn`);
+              } else {
+                addToLog(`Player ${nextPlayer} has no moves - Player ${currentPlayer} continues`);
+              }
+            } else {
+              addToLog(`Player ${currentPlayer} gets another turn!`);
+            }
+          }
+          setSelectedHouse(null);
+          setIsAnimating(false);
+          setMovingSeed(null);
+          setMovePath([]);
+          setMoveAnimationStep(0);
+        }
+      };
+      animateSeed(0);
+    }
+  };
+
+  const resetGame = () => {
+    setBoard({
+      player1Houses: [4, 4, 4, 4, 4, 4],
+      player2Houses: [4, 4, 4, 4, 4, 4],
+      player1Store: 0,
+      player2Store: 0
+    });
+    setCurrentPlayer(1);
+    setGameStatus('playing');
+    setWinner(null);
+    setSelectedHouse(null);
+    setIsAnimating(false);
+    setGameLog(['Game restarted! Player 1 begins.']);
+  };
+
+  const handleNameChange = (player, value) => {
+    setPlayerNames(prev => ({ ...prev, [player]: value }));
+  };
+
+  const handleStartGame = () => {
+    setNameInputVisible(false);
+  };
+
+  const saveGameResult = (result) => {
+    const newResults = [...gameResults, result];
+    setGameResults(newResults);
+    // Find highest scorer
+    let maxScore = -1;
+    let maxPlayer = '';
+    newResults.forEach(r => {
+      if (r.score1 > maxScore) {
+        maxScore = r.score1;
+        maxPlayer = r.player1;
+      }
+      if (r.score2 > maxScore) {
+        maxScore = r.score2;
+        maxPlayer = r.player2;
+      }
+    });
+    setHighestScorer({ name: maxPlayer, score: maxScore });
+  };
+
+  const startNewGame = () => {
+    setNameInputVisible(true);
+    setBoard({
+      player1Houses: [4, 4, 4, 4, 4, 4],
+      player2Houses: [4, 4, 4, 4, 4, 4],
+      player1Store: 0,
+      player2Store: 0
+    });
+    setCurrentPlayer(1);
+    setGameStatus('playing');
+    setWinner(null);
+    setSelectedHouse(null);
+    setIsAnimating(false);
+    setGameLog(['Game restarted! Player 1 begins.']);
+  };
+
+  const renderSeeds = (count, houseId) => {
+    if (count === 0) return null;
+    const seeds = [];
+    for (let i = 0; i < Math.min(count, 20); i++) {
+      seeds.push(
+        <div
+          key={i}
+          className="w-2 h-2 bg-amber-600 rounded-full shadow-sm"
+          style={{
+            position: 'absolute',
+            left: `${20 + (i % 5) * 15}%`,
+            top: `${20 + Math.floor(i / 5) * 20}%`,
+            transition: 'all 0.2s',
+          }}
+        />
+      );
+    }
+    if (count > 20) {
+      seeds.push(
+        <div key="overflow" className="absolute bottom-1 right-1 text-xs font-bold text-amber-800">
+          +{count - 20}
+        </div>
+      );
+    }
+    // Animated moving seed
+    if (movingSeed && movePath[moveAnimationStep - 1] === houseId) {
+      seeds.push(
+        <div
+          key="moving"
+          className="w-4 h-4 bg-yellow-400 rounded-full shadow-lg animate-bounce"
+          style={{ position: 'absolute', left: '40%', top: '40%', zIndex: 10 }}
+        />
+      );
+    }
+    return seeds;
+  };
+
+  return (
+    <div className="w-full max-w-5xl mx-auto p-4 bg-gradient-to-b from-amber-50 to-orange-50 min-h-screen">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-amber-100">
+        {/* Online Play UI - Modernized */}
+        <div className="mb-6 flex flex-col md:flex-row items-center gap-4 justify-between">
+          <div className="flex gap-2 items-center">
+            <Tooltip text="Play with someone online in real time">
+              <button
+                className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow transition-colors ${onlineMode ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100'}`}
+                onClick={() => setOnlineMode(!onlineMode)}
+              >
+                <Link2 size={18} />
+                {onlineMode ? 'Online Mode Enabled' : 'Play Online'}
+              </button>
+            </Tooltip>
+            {onlineMode && (
+              <span className="text-green-700 text-sm font-semibold flex items-center gap-1">
+                <Loader2 className="animate-spin" size={16} />
+                {onlineStatus === 'idle' ? 'Ready' : onlineStatus === 'waiting' ? 'Waiting for opponent...' : 'Connected'}
+              </span>
+            )}
+          </div>
+          {onlineMode && (
+            <div className="flex gap-2 items-center">
+              {onlineStatus === 'idle' && (
+                <>
+                  <button
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-green-600"
+                    onClick={handleCreateGame}
+                  >
+                    Create Game
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Game ID"
+                    value={gameId}
+                    onChange={e => setGameId(e.target.value)}
+                    className="px-3 py-2 rounded border border-blue-300 focus:outline-none shadow"
+                  />
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-600"
+                    onClick={() => handleJoinGame(gameId)}
+                  >
+                    Join Game
+                  </button>
+                  {onlineError && <div className="text-red-600 mt-2">{onlineError}</div>}
+                </>
+              )}
+              {onlineStatus === 'waiting' && (
+                <div className="text-green-700 font-mono text-sm">
+                  Game ID: <span className="font-bold">{gameId}</span>
+                </div>
+              )}
+              {onlineStatus === 'playing' && (
+                <div className="text-green-700 font-mono text-sm">
+                  Connected {isHost ? '(Host)' : '(Guest)'} | Game ID: <span className="font-bold">{gameId}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Player Name Input */}
+        {nameInputVisible && (
+          <PlayerNameInput
+            playerNames={playerNames}
+            handleNameChange={handleNameChange}
+            handleStartGame={handleStartGame}
+          />
+        )}
+        {/* Highest Scorer Display */}
+        <HighestScorer highestScorer={highestScorer} />
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 bg-amber-200 rounded-full"></div>
+            </div>
+            Gebeta-ገበጣ
+          </h1>
+          <div className="flex gap-2">
+            <Tooltip text="View game rules">
+              <button
+                onClick={() => setShowRules(!showRules)}
+                className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1 shadow"
+              >
+                <Info size={16} />
+                Rules
+              </button>
+            </Tooltip>
+            <Tooltip text="Restart the game">
+              <button
+                onClick={resetGame}
+                className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1 shadow"
+              >
+                <RotateCcw size={16} />
+                New Game
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+        {/* Rules Panel */}
+        {showRules && <RulesPanel />}
+        {/* Game Status */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-100 p-3 rounded-lg flex flex-col items-center">
+            <div className="text-sm text-gray-600">Current Player</div>
+            <div className={`font-bold text-lg flex items-center gap-2 ${currentPlayer === 1 ? 'text-blue-600' : 'text-red-600'}`}>
+              <PlayerAvatar player={currentPlayer} name={playerNames[currentPlayer]} />
+              {playerNames[currentPlayer] || `Player ${currentPlayer}`}
+            </div>
+          </div>
+          <div className="bg-blue-100 p-3 rounded-lg flex flex-col items-center">
+            <div className="text-sm text-gray-600 flex items-center gap-1">
+              <Users size={16} />
+              Player 1 Score
+            </div>
+            <div className="font-bold text-lg">{board.player1Store}</div>
+          </div>
+          <div className="bg-red-100 p-3 rounded-lg flex flex-col items-center">
+            <div className="text-sm text-gray-600 flex items-center gap-1">
+              <Users size={16} />
+              Player 2 Score
+            </div>
+            <div className="font-bold text-lg">{board.player2Store}</div>
+          </div>
+          <div className="bg-yellow-100 p-3 rounded-lg flex flex-col items-center">
+            <div className="text-sm text-gray-600">Game Status</div>
+            <div className="font-bold text-lg">
+              {gameStatus === 'ended' ? (
+                winner === 0 ? 'Tie!' : `${playerNames[winner] || `Player ${winner}`} Wins!`
+              ) : 'Playing'}
+            </div>
+          </div>
+        </div>
+        {/* Game Board - Modernized */}
+        <div className="bg-amber-200 p-6 rounded-xl shadow-inner">
+          <div className="flex justify-between items-center mb-4">
+            {/* Player 2 Store */}
+            <div className="w-20 h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900">
+              <div className="text-white font-bold text-sm mb-1">P2</div>
+              {renderSeeds(board.player2Store, getStorePosition(2))}
+            </div>
+            {/* Playing Field */}
+            <div className="flex-1 mx-6">
+              {/* Player 2 Houses (top row) */}
+              <div className="flex gap-2 mb-4 justify-center">
+                {board.player2Houses.slice().reverse().map((seeds, idx) => {
+                  const actualIndex = 5 - idx;
+                  const houseId = getHousePosition(2, actualIndex);
+                  const isSelected = selectedHouse && selectedHouse.player === 2 && selectedHouse.house === actualIndex;
+                  const canSelect = currentPlayer === 2 && seeds > 0 && !isAnimating;
+                  return (
+                    <Tooltip key={`p2-${actualIndex}`} text={`House ${actualIndex + 1}`}>
+                      <div
+                        id={houseId}
+                        className={`w-16 h-16 bg-amber-100 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center ${
+                          isSelected ? 'border-red-500 bg-red-100' :
+                          canSelect ? 'border-amber-400 hover:bg-amber-200' :
+                          'border-amber-300'
+                        }`}
+                        onClick={() => currentPlayer === 2 && makeMove(actualIndex)}
+                      >
+                        {renderSeeds(seeds, houseId)}
+                      </div>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {/* Player 1 Houses (bottom row) */}
+              <div className="flex gap-2 justify-center">
+                {board.player1Houses.map((seeds, idx) => {
+                  const houseId = getHousePosition(1, idx);
+                  const isSelected = selectedHouse && selectedHouse.player === 1 && selectedHouse.house === idx;
+                  const canSelect = currentPlayer === 1 && seeds > 0 && !isAnimating;
+                  return (
+                    <Tooltip key={`p1-${idx}`} text={`House ${idx + 1}`}>
+                      <div
+                        id={houseId}
+                        className={`w-16 h-16 bg-amber-100 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center ${
+                          isSelected ? 'border-blue-500 bg-blue-100' :
+                          canSelect ? 'border-amber-400 hover:bg-amber-200' :
+                          'border-amber-300'
+                        }`}
+                        onClick={() => currentPlayer === 1 && makeMove(idx)}
+                      >
+                        {renderSeeds(seeds, houseId)}
+                      </div>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Player 1 Store */}
+            <div className="w-20 h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900">
+              <div className="text-white font-bold text-sm mb-1">P1</div>
+              {renderSeeds(board.player1Store, getStorePosition(1))}
+            </div>
+          </div>
+          {/* Player Labels */}
+          <div className="flex justify-between text-sm font-bold text-gray-700 mt-4">
+            <div className={`${currentPlayer === 2 ? 'text-red-600' : ''} flex items-center gap-2`}>
+              <PlayerAvatar player={2} name={playerNames[2]} />
+              ← {playerNames[2] || 'Player 2'} (Red)
+            </div>
+            <div className="text-center text-gray-500">
+              {isAnimating ? 'Making move...' : gameStatus === 'ended' ? 'Game Over' : `${playerNames[currentPlayer] || `Player ${currentPlayer}`}'s turn`}
+            </div>
+            <div className={`${currentPlayer === 1 ? 'text-blue-600' : ''} flex items-center gap-2`}>
+              {playerNames[1] || 'Player 1'} (Blue) →
+              <PlayerAvatar player={1} name={playerNames[1]} />
+            </div>
+          </div>
+        </div>
+        {/* Game Log - Modernized */}
+        <GameLog gameLog={gameLog} />
+        {/* Game End */}
+        {gameStatus === 'ended' && (
+          <GameEndPanel
+            winner={winner}
+            playerNames={playerNames}
+            board={board}
+            resetGame={resetGame}
+          />
+        )}
+        {/* Cultural Note */}
+        <CulturalNote />
+        {/* Game Results History - Modernized */}
+        <GameResultsTable gameResults={gameResults} />
+        {/* New Game Button always asks for names */}
+        <div className="mt-4 flex justify-center">
+          <Tooltip text="Start a new game with new names">
+            <button
+              onClick={startNewGame}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold shadow"
+            >
+              New Game
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GebetaGame;

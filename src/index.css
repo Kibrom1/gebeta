@@ -5,9 +5,92 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e42 40%, #fff3c4 100%);
+  background-attachment: fixed;
+  position: relative;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Subtle geometric pattern overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  opacity: 0.10;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(135deg, #b45309 0px, #b45309 1.5px, transparent 1.5px, transparent 28px),
+    repeating-linear-gradient(45deg, #f59e42 0px, #f59e42 1px, transparent 1px, transparent 32px);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Main card background for game area */
+.bg-white {
+  background: linear-gradient(120deg, #fffbe6 60%, #fbbf24 100%);
+}
+
+/* Board area */
+.bg-amber-200 {
+  background: linear-gradient(90deg, #fbbf24 60%, #fff3c4 100%);
+}
+
+/* Store colors */
+.bg-amber-800 {
+  background-color: #b45309 !important;
+}
+
+/* House colors */
+.bg-amber-100 {
+  background-color: #fff3c4 !important;
+}
+
+/* Button and accent colors */
+.bg-blue-500 {
+  background-color: #2563eb !important;
+}
+.bg-green-500 {
+  background-color: #059669 !important;
+}
+.bg-yellow-100 {
+  background-color: #fef9c3 !important;
+}
+.bg-red-100 {
+  background-color: #fee2e2 !important;
+}
+.bg-blue-100 {
+  background-color: #dbeafe !important;
+}
+.bg-red-600 {
+  color: #dc2626 !important;
+}
+.bg-blue-600 {
+  background-color: #2563eb !important;
+}
+.bg-green-600 {
+  background-color: #059669 !important;
+}
+
+/* Text colors for better contrast */
+.text-gray-800 {
+  color: #1e293b !important;
+}
+.text-gray-600 {
+  color: #475569 !important;
+}
+.text-yellow-600 {
+  color: #ca8a04 !important;
+}
+.text-blue-600 {
+  color: #2563eb !important;
+}
+.text-red-600 {
+  color: #dc2626 !important;
+}
+.text-green-700 {
+  color: #047857 !important;
 }
