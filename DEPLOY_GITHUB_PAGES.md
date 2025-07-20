@@ -6,7 +6,7 @@
 
 2. Update package.json:
 - Add this line (replace with your username/repo):
-  "homepage": "https://<your-github-username>.github.io/<your-repo-name>"
+  "homepage": "https://kibrom1.github.io/gebeta"
 - Add these scripts:
   "predeploy": "npm run build",
   "deploy": "gh-pages -d build"
@@ -14,7 +14,7 @@
 3. Initialize git and push to GitHub:
 
     git init
-    git remote add origin https://github.com/<your-github-username>/<your-repo-name>.git
+    git remote add origin https://github.com/kibrom1/gebeta.git
     git add .
     git commit -m "Initial commit"
     git push -u origin main
