@@ -42,6 +42,7 @@ const GebetaGame = () => {
   const [onlineStatus, setOnlineStatus] = useState('idle'); // idle, waiting, playing
   const wsRef = useRef(null);
   const [remotePlayerJoined, setRemotePlayerJoined] = useState(false);
+  const [computerSelectedHouse, setComputerSelectedHouse] = useState(null);
 
   const addToLog = (message) => {
     setGameLog(prev => [...prev.slice(-4), message]);
@@ -555,6 +556,25 @@ const GebetaGame = () => {
     return seeds;
   };
 
+  // Add computer move logic
+  useEffect(() => {
+    if (!onlineMode && !nameInputVisible && playerNames[2] === '' && currentPlayer === 2 && gameStatus === 'playing' && canPlayerMove(2)) {
+      // Computer move after longer delay and flash the house
+      const idx = board.player2Houses.findIndex(h => h > 0);
+      if (idx !== -1) {
+        setComputerSelectedHouse(idx);
+        const timeout = setTimeout(() => {
+          makeMove(idx);
+          setTimeout(() => setComputerSelectedHouse(null), 800); // Remove flash after move
+        }, 1800); // 1.8s delay for computer move
+        return () => {
+          clearTimeout(timeout);
+          setComputerSelectedHouse(null);
+        };
+      }
+    }
+  }, [currentPlayer, board, onlineMode, nameInputVisible, playerNames, gameStatus]);
+
   return (
     <div className="w-full max-w-5xl mx-auto p-2 sm:p-4 bg-gradient-to-b from-amber-50 to-orange-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-2xl p-2 sm:p-8 border border-amber-100">
@@ -661,32 +681,28 @@ const GebetaGame = () => {
         {showRules && <div className="w-full max-w-lg mx-auto"><RulesPanel /></div>}
         {/* Game Status */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 text-xs sm:text-sm">
-          <div className="bg-gray-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
-            <div className="text-xs sm:text-sm text-gray-600">Current Player</div>
-            <div className={`font-bold text-base sm:text-lg flex items-center gap-2 ${currentPlayer === 1 ? 'text-blue-600' : 'text-red-600'}`}> 
-              <PlayerAvatar player={currentPlayer} name={playerNames[currentPlayer]} />
-              {playerNames[currentPlayer] || `Player ${currentPlayer}`}
-            </div>
-          </div>
+          {/* Player 1 Score */}
           <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
             <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <Users size={16} />
-              Player 1 Score
+              {playerNames[1] || 'Player 1'}
             </div>
             <div className="font-bold text-base sm:text-lg">{board.player1Store}</div>
           </div>
+          {/* Player 2 Score */}
           <div className="bg-red-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
             <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <Users size={16} />
-              Player 2 Score
+              {playerNames[2] || (nameInputVisible ? 'Player 2' : 'Computer')}
             </div>
             <div className="font-bold text-base sm:text-lg">{board.player2Store}</div>
           </div>
+          {/* Game Status */}
           <div className="bg-yellow-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
             <div className="text-xs sm:text-sm text-gray-600">Game Status</div>
             <div className="font-bold text-base sm:text-lg">
               {gameStatus === 'ended' ? (
-                winner === 0 ? 'Tie!' : `${playerNames[winner] || `Player ${winner}`} Wins!`
+                winner === 0 ? 'Tie!' : `${playerNames[winner] || (winner === 2 ? 'Computer' : `Player ${winner}`)} Wins!`
               ) : 'Playing'}
             </div>
           </div>
@@ -696,7 +712,7 @@ const GebetaGame = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-2 sm:gap-0 w-full">
             {/* Player 2 Store */}
             <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mb-2 sm:mb-0 shrink-0">
-              <div className="text-white font-bold text-xs sm:text-sm mb-1">P2</div>
+              <div className={`font-bold text-xs sm:text-sm mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || 'Computer'}</div>
               {renderSeeds(board.player2Store, getStorePosition(2))}
             </div>
             {/* Playing Field */}
@@ -706,17 +722,19 @@ const GebetaGame = () => {
                 {board.player2Houses.slice().reverse().map((seeds, idx) => {
                   const actualIndex = 5 - idx;
                   const houseId = getHousePosition(2, actualIndex);
-                  const isSelected = selectedHouse && selectedHouse.player === 2 && selectedHouse.house === actualIndex;
-                  const canSelect = currentPlayer === 2 && seeds > 0 && !isAnimating;
+                  const isSelectedP2 = selectedHouse && selectedHouse.player === 2 && selectedHouse.house === actualIndex;
+                  const canSelectP2 = currentPlayer === 2 && seeds > 0 && !isAnimating;
+                  const isComputerFlash = computerSelectedHouse === actualIndex && currentPlayer === 2 && playerNames[2] === '' && !onlineMode;
                   return (
                     <Tooltip key={`p2-${actualIndex}`} text={`House ${actualIndex + 1}`}>
                       <div
                         id={houseId}
-                        className={`w-12 sm:w-16 h-12 sm:h-16 bg-amber-100 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center ${
-                          isSelected ? 'border-red-500 bg-red-100' :
-                          canSelect ? 'border-amber-400 hover:bg-amber-200' :
-                          'border-amber-300'
-                        }`}
+                        className={`w-12 sm:w-16 h-12 sm:h-16 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
+                          ${isSelectedP2 ? 'border-red-500 bg-red-200' :
+                            canSelectP2 ? 'border-red-400 bg-red-100 hover:bg-red-200' :
+                            'border-red-300 bg-red-50'}
+                        ${isComputerFlash ? 'animate-flash' : ''}
+                        `}
                         onClick={() => currentPlayer === 2 && makeMove(actualIndex)}
                       >
                         {renderSeeds(seeds, houseId)}
@@ -729,17 +747,17 @@ const GebetaGame = () => {
               <div className="flex gap-1 sm:gap-2 justify-center flex-wrap w-full">
                 {board.player1Houses.map((seeds, idx) => {
                   const houseId = getHousePosition(1, idx);
-                  const isSelected = selectedHouse && selectedHouse.player === 1 && selectedHouse.house === idx;
-                  const canSelect = currentPlayer === 1 && seeds > 0 && !isAnimating;
+                  const isSelectedP1 = selectedHouse && selectedHouse.player === 1 && selectedHouse.house === idx;
+                  const canSelectP1 = currentPlayer === 1 && seeds > 0 && !isAnimating;
                   return (
                     <Tooltip key={`p1-${idx}`} text={`House ${idx + 1}`}>
                       <div
                         id={houseId}
-                        className={`w-12 sm:w-16 h-12 sm:h-16 bg-amber-100 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center ${
-                          isSelected ? 'border-blue-500 bg-blue-100' :
-                          canSelect ? 'border-amber-400 hover:bg-amber-200' :
-                          'border-amber-300'
-                        }`}
+                        className={`w-12 sm:w-16 h-12 sm:h-16 rounded-lg shadow-md cursor-pointer transition-all relative border-2 flex items-center justify-center
+                          ${isSelectedP1 ? 'border-blue-500 bg-blue-200' :
+                            canSelectP1 ? 'border-blue-400 bg-blue-100 hover:bg-blue-200' :
+                            'border-blue-300 bg-blue-50'}
+                        `}
                         onClick={() => currentPlayer === 1 && makeMove(idx)}
                       >
                         {renderSeeds(seeds, houseId)}
@@ -751,20 +769,20 @@ const GebetaGame = () => {
             </div>
             {/* Player 1 Store */}
             <div className="w-16 sm:w-20 h-16 sm:h-32 bg-amber-800 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-amber-900 mt-2 sm:mt-0 shrink-0">
-              <div className="text-white font-bold text-xs sm:text-sm mb-1">P1</div>
+              <div className={`font-bold text-xs sm:text-sm mb-1 text-white ${currentPlayer === 1 ? 'animate-flash' : ''}`}>{playerNames[1] || 'Player 1'}</div>
               {renderSeeds(board.player1Store, getStorePosition(1))}
             </div>
           </div>
           {/* Player Labels - responsive font and layout */}
           <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-bold text-gray-700 mt-2 sm:mt-4 gap-2 sm:gap-0 w-full">
-            <div className={`${currentPlayer === 2 ? 'text-red-600' : ''} flex items-center gap-1 sm:gap-2 justify-center sm:justify-start`}>
-              <PlayerAvatar player={2} name={playerNames[2]} />
-              ← {playerNames[2] || 'Player 2'} (Red)
+            <div className={`flex items-center gap-1 sm:gap-2 justify-center sm:justify-start ${currentPlayer === 2 ? 'text-red-600 animate-flash' : ''}`}> 
+              <PlayerAvatar player={2} name={playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')} />
+              ← {playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')} (Red)
             </div>
             <div className="text-center text-gray-500">
               {isAnimating ? 'Making move...' : gameStatus === 'ended' ? 'Game Over' : `${playerNames[currentPlayer] || `Player ${currentPlayer}`}'s turn`}
             </div>
-            <div className={`${currentPlayer === 1 ? 'text-blue-600' : ''} flex items-center gap-1 sm:gap-2 justify-center sm:justify-end`}>
+            <div className={`flex items-center gap-1 sm:gap-2 justify-center sm:justify-end ${currentPlayer === 1 ? 'text-blue-600 animate-flash' : ''}`}> 
               {playerNames[1] || 'Player 1'} (Blue) →
               <PlayerAvatar player={1} name={playerNames[1]} />
             </div>
