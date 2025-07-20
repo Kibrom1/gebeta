@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/gebeta/static/css/main.da46b492.css",
+    "main.js": "/gebeta/static/js/main.3d17ee5d.js",
+    "static/js/453.74d69a3c.chunk.js": "/gebeta/static/js/453.74d69a3c.chunk.js",
+    "index.html": "/gebeta/index.html",
+    "main.da46b492.css.map": "/gebeta/static/css/main.da46b492.css.map",
+    "main.3d17ee5d.js.map": "/gebeta/static/js/main.3d17ee5d.js.map",
+    "453.74d69a3c.chunk.js.map": "/gebeta/static/js/453.74d69a3c.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.da46b492.css",
+    "static/js/main.3d17ee5d.js"
+  ]
+}
