@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/gebeta/static/css/main.e4af04d5.css",
-    "main.js": "/gebeta/static/js/main.a18ec19b.js",
+    "main.css": "/gebeta/static/css/main.dd3e74f8.css",
+    "main.js": "/gebeta/static/js/main.bc7ac0ea.js",
     "static/js/453.74d69a3c.chunk.js": "/gebeta/static/js/453.74d69a3c.chunk.js",
     "index.html": "/gebeta/index.html",
-    "main.e4af04d5.css.map": "/gebeta/static/css/main.e4af04d5.css.map",
-    "main.a18ec19b.js.map": "/gebeta/static/js/main.a18ec19b.js.map",
+    "main.dd3e74f8.css.map": "/gebeta/static/css/main.dd3e74f8.css.map",
+    "main.bc7ac0ea.js.map": "/gebeta/static/js/main.bc7ac0ea.js.map",
     "453.74d69a3c.chunk.js.map": "/gebeta/static/js/453.74d69a3c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.e4af04d5.css",
-    "static/js/main.a18ec19b.js"
+    "static/css/main.dd3e74f8.css",
+    "static/js/main.bc7ac0ea.js"
   ]
 }
