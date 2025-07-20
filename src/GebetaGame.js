@@ -10,7 +10,7 @@ import PlayerNameInput from './components/PlayerNameInput';
 import GameEndPanel from './components/GameEndPanel';
 import CulturalNote from './components/CulturalNote';
 
-const WS_SERVER_URL = 'ws://localhost:8080';
+const WS_SERVER_URL = 'https://gebeta-ws-server.fly.dev/'; // Use your actual public WebSocket server URL here
 
 const GebetaGame = () => {
   // Game state - 12 houses (6 per player) + 2 stores
