@@ -766,7 +766,7 @@ const GebetaGame = () => {
         </div>
         {/* Game Board - Modernized & Mobile Friendly */}
         <div className="bg-amber-300 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto w-full flex flex-col items-center" style={{ background: 'repeating-linear-gradient(135deg, #fbbf24 0px, #fbbf24 2px, #fff3c4 2px, #fff3c4 32px)' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-2">
             {/* Player 2 Store */}
             <div className="w-20 sm:w-24 h-20 sm:h-32 bg-red-200 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-red-400 mb-2 sm:mb-0 shrink-0 text-base sm:text-lg">
               <div className={`font-bold mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')}</div>
