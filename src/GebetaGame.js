@@ -704,6 +704,7 @@ const GebetaGame = () => {
         {/* Player Name Input */}
         {nameInputVisible && (
           <div className="w-full max-w-md mx-auto">
+            {/* Name input fields (no heading) */}
             <PlayerNameInput
               playerNames={playerNames}
               handleNameChange={handleNameChange}

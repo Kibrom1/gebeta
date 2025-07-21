@@ -17,14 +17,14 @@ const PlayerNameInput = ({ playerNames, handleNameChange, handleStartGame }) => 
         aria-expanded={!collapsed}
         style={{ minHeight: '40px' }}
       >
-        {collapsed ? 'Show Player Name Entry' : 'Hide Player Name Entry'}
+        {collapsed ? 'Player Name Entry' : 'Player Name Entry'}
       </button>
       {!collapsed && (
         <div className="p-2 bg-blue-50 rounded-lg border-l-4 border-blue-500 flex flex-col gap-2 items-center">
-          <h3 className="font-bold mb-2 text-center text-base">Enter Player Names</h3>
           <div className="flex flex-col gap-2 w-full items-center justify-center">
-            <div className="flex flex-col items-center gap-1 w-full">
-              <PlayerAvatar player={1} name={playerNames[1]} />
+            {/* Player 1 avatar to the left of its name field */}
+            <div className="flex flex-row items-center gap-3 w-full">
+              <PlayerAvatar player={1} name={playerNames[1]} size={56} />
               <input
                 type="text"
                 placeholder="Player 1 Name"
@@ -34,8 +34,9 @@ const PlayerNameInput = ({ playerNames, handleNameChange, handleStartGame }) => 
                 maxLength={10}
               />
             </div>
-            <div className="flex flex-col items-center gap-1 w-full">
-              <PlayerAvatar player={2} name={playerNames[2]} />
+            {/* Player 2 avatar to the left of its name field */}
+            <div className="flex flex-row items-center gap-3 w-full">
+              <PlayerAvatar player={2} name={playerNames[2]} size={56} />
               <input
                 type="text"
                 placeholder="Player 2 Name"
@@ -47,8 +48,8 @@ const PlayerNameInput = ({ playerNames, handleNameChange, handleStartGame }) => 
             </div>
             <button
               onClick={handleStartGame}
-              className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 font-bold shadow w-full text-base"
-              style={{ minHeight: '32px', minWidth: '80px' }}
+              className="bg-green-600 text-white px-4 py-1 rounded-lg hover:bg-green-700 font-bold shadow text-base"
+              style={{ minHeight: '32px', minWidth: '0', width: 'auto', alignSelf: 'center' }}
             >
               Start Game
             </button>
