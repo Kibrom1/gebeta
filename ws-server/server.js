@@ -1,7 +1,8 @@
 // Simple Gebeta WebSocket server for online play
 const WebSocket = require('ws');
-const PORT = process.env.PORT || 8080;
-const wss = new WebSocket.Server({ port: PORT });
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = process.env.PORT || 3000;
+const wss = new WebSocket.Server({ host: HOST, port: PORT });
 
 let games = {};
 
@@ -36,4 +37,4 @@ wss.on('connection', ws => {
   });
 });
 
-console.log(`WebSocket server running on port ${PORT}`);
+console.log(`WebSocket server running on ${HOST}:${PORT}`);
