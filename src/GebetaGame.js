@@ -123,13 +123,16 @@ const GebetaGame = () => {
   };
 
   // Connect to WebSocket server
-  const connectWebSocket = () => {
+  const connectWebSocket = (onOpenMessage) => {
     if (wsRef.current) return;
     const socket = new window.WebSocket(WS_SERVER_URL);
     wsRef.current = socket;
     setWs(socket);
     socket.onopen = () => {
       setOnlineStatus('waiting');
+      if (onOpenMessage) {
+        socket.send(JSON.stringify(onOpenMessage));
+      }
     };
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -166,16 +169,10 @@ const GebetaGame = () => {
 
   // Create or join game
   const handleCreateGame = () => {
-    connectWebSocket();
-    setTimeout(() => {
-      wsRef.current && wsRef.current.send(JSON.stringify({ type: 'create', state: board }));
-    }, 500);
+    connectWebSocket({ type: 'create', state: board });
   };
   const handleJoinGame = (id) => {
-    connectWebSocket();
-    setTimeout(() => {
-      wsRef.current && wsRef.current.send(JSON.stringify({ type: 'join', gameId: id }));
-    }, 500);
+    connectWebSocket({ type: 'join', gameId: id });
   };
 
   // Send move to server
