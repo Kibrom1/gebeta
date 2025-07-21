@@ -569,8 +569,26 @@ const GebetaGame = () => {
   // Add computer move logic
   useEffect(() => {
     if (!onlineMode && !nameInputVisible && playerNames[2] === '' && currentPlayer === 2 && gameStatus === 'playing' && canPlayerMove(2)) {
-      // Computer move after longer delay and flash the house
-      const idx = board.player2Houses.findIndex(h => h > 0);
+      // Improved computer move: pick the house with the most seeds, prefer moves that land in store
+      const houses = board.player2Houses;
+      let bestIdx = -1;
+      let maxSeeds = -1;
+      let storeMoveIdx = -1;
+      for (let i = 0; i < houses.length; i++) {
+        const seeds = houses[i];
+        if (seeds > 0) {
+          // Check if this move lands in the store
+          if (seeds === (5 - i + 1)) {
+            storeMoveIdx = i;
+          }
+          if (seeds > maxSeeds) {
+            maxSeeds = seeds;
+            bestIdx = i;
+          }
+        }
+      }
+      // Prefer move that lands in store, else pick house with most seeds
+      const idx = storeMoveIdx !== -1 ? storeMoveIdx : bestIdx;
       if (idx !== -1) {
         setComputerSelectedHouse(idx);
         const timeout = setTimeout(() => {
@@ -732,7 +750,7 @@ const GebetaGame = () => {
           <div className="bg-red-100 p-2 sm:p-3 rounded-lg flex flex-col items-center">
             <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
               <Users size={16} />
-              {playerNames[2] || (nameInputVisible ? 'Player 2' : 'Computer')}
+              {playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')}
             </div>
             <div className="font-bold text-base sm:text-lg">{board.player2Store}</div>
           </div>
@@ -748,10 +766,10 @@ const GebetaGame = () => {
         </div>
         {/* Game Board - Modernized & Mobile Friendly */}
         <div className="bg-amber-300 p-2 sm:p-6 rounded-xl shadow-inner overflow-x-auto w-full flex flex-col items-center" style={{ background: 'repeating-linear-gradient(135deg, #fbbf24 0px, #fbbf24 2px, #fff3c4 2px, #fff3c4 32px)' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap-4 sm:gap-0 w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-2 sm:mb-4 gap
             {/* Player 2 Store */}
             <div className="w-20 sm:w-24 h-20 sm:h-32 bg-red-200 rounded-lg shadow-lg flex flex-col items-center justify-center relative border-4 border-red-400 mb-2 sm:mb-0 shrink-0 text-base sm:text-lg">
-              <div className={`font-bold mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || 'Computer'}</div>
+              <div className={`font-bold mb-1 text-white ${currentPlayer === 2 ? 'animate-flash' : ''}`}>{playerNames[2] || (!nameInputVisible ? 'Computer' : 'Player 2')}</div>
               {renderSeeds(board.player2Store, getStorePosition(2))}
             </div>
             {/* Playing Field */}
