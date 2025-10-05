@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gebeta House</title>
+  <style>
+    .house {
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle at 30% 30%, #b87333, #8b4513);
+      border-radius: 50%;
+      border: 4px solid #5c3317;
+      box-shadow: inset -4px -4px 10px rgba(0,0,0,0.4),
+                  inset 4px 4px 8px rgba(255,255,255,0.1),
+                  0 2px 4px rgba(0,0,0,0.3);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin: 10px;
+    }
+
+    .seed {
+      width: 12px;
+      height: 12px;
+      background-color: #d2b48c;
+      border-radius: 50%;
+      margin: 3px;
+      box-shadow: inset -1px -1px 2px rgba(0,0,0,0.3),
+                  inset 1px 1px 2px rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="house">
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
+  </div>
+  <!-- Add audio element and play button -->
+  <audio id="myAudio" src="../../../../public/sounds/click.mp3"></audio>
+  <button onclick="document.getElementById('myAudio').play()" style="margin-top:20px;">Play Sound</button>
+</body>
+</html>
